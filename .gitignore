@@ -476,3 +476,5 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+API/skinet.db-shm
+API/skinet.db-wal
