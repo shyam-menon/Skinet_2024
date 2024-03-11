@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Core.Interfaces;
 using Infrastructure.Data;
-using Core.Entities; // Add the namespace for Task
+using Core.Entities;
+using Core.Specifications;
+using API.Dtos;
+using AutoMapper; // Add the namespace for Task
 
 
 
@@ -13,48 +16,62 @@ namespace API.Controllers
     public class ProductsController : ControllerBase
     {
         private readonly ILogger<ProductsController> _logger;
-        private readonly IProductRepository _productsRepository; // Replace StoreContext with IProductsRepository
+        private readonly IGenericRepository<Product> _productsRepository;
+        private readonly IGenericRepository<ProductBrand> _productBrandRepository;
+        private readonly IGenericRepository<ProductType> _productTypeRepository;
+        public IMapper _mapper { get; }
 
-        public ProductsController(ILogger<ProductsController> logger, IProductRepository productsRepository) // Modify constructor
+        public ProductsController(ILogger<ProductsController> logger, IGenericRepository<Product> productsRepo,
+            IGenericRepository<ProductBrand> productBrandRepo, IGenericRepository<ProductType> productTypeRepo, IMapper mapper) // Modify constructor
         {
+            _mapper= mapper;
             _logger = logger;
-            _productsRepository = productsRepository; // Assign IProductsRepository
+            _productsRepository = productsRepo; // Initialize _productsRepository field
+            _productBrandRepository = productBrandRepo; // Initialize _productBrandRepository field
+            _productTypeRepository = productTypeRepo; // Initialize _productTypeRepository field
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetProducts()
+        public async Task<ActionResult<IReadOnlyList<ProductToReturnDto>>> GetProducts()
         {
             _logger.LogInformation("Retrieving products");
-            var products = await _productsRepository.GetProductsAsync(); // Retrieve products asynchronously using IProductsRepository
-            return Ok(products); // Return the products
+
+            var spec = new ProductsWithTypesAndBrandsSpecification();
+            var products = await _productsRepository.ListAsync(spec); // Use the ListAsync method 
+            var productsToReturn = _mapper.Map<IReadOnlyList<Product>, IReadOnlyList<ProductToReturnDto>>(products); // Use the Map method
+            return Ok(productsToReturn);
         }
 
         [HttpGet("{id}")]
-        public IActionResult GetProductById(int id)
+        public async Task<ActionResult<ProductToReturnDto>> GetProductById(int id)
         {
-            _logger.LogInformation($"Retrieving product with ID: {id}");
-            var product = _productsRepository.GetProductByIdAsync(id); // Retrieve product by ID from the IProductsRepository
+            _logger.LogInformation("Retrieving product with ID: {ProductId}", id);
+
+            var spec = new ProductsWithTypesAndBrandsSpecification(id);
+            var product = await _productsRepository.GetEntityWithSpec(spec);
             if (product == null)
             {
-                return NotFound(); // Return 404 if product is not found
+                return NotFound();
             }
-            return Ok(product); // Return the product
+
+            var productToReturn = _mapper.Map<Product, ProductToReturnDto>(product);
+            return Ok(productToReturn);
         }
 
         [HttpGet("brands")]
         public async Task<ActionResult<IReadOnlyList<ProductBrand>>> GetProductBrands()
         {
             _logger.LogInformation("Retrieving product brands");
-            var productBrands = await _productsRepository.GetProductBrandsAsync(); // Retrieve product brands asynchronously using IProductsRepository
-            return Ok(productBrands); // Wrap the product brands with Ok method
+            var productBrands = await _productBrandRepository.ListAllAsync(); 
+            return Ok(productBrands); 
         }
 
         [HttpGet("types")]
         public async Task<ActionResult<IReadOnlyList<ProductType>>> GetProductTypes()
         {
             _logger.LogInformation("Retrieving product types");
-            var productTypes = await _productsRepository.GetProductTypesAsync(); // Retrieve product types asynchronously using IProductsRepository
-            return Ok(productTypes); // Wrap the product types with Ok method
+            var productTypes = await _productTypeRepository.ListAllAsync(); 
+            return Ok(productTypes); 
         }
 
     }
