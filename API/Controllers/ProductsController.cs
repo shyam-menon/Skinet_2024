@@ -4,16 +4,14 @@ using Infrastructure.Data;
 using Core.Entities;
 using Core.Specifications;
 using API.Dtos;
-using AutoMapper; // Add the namespace for Task
+using AutoMapper;
+using API.Errors; // Add the namespace for Task
 
 
 
 namespace API.Controllers
-{
-    [ApiController]
-    //add route
-    [Route("api/products")]
-    public class ProductsController : ControllerBase
+{    
+    public class ProductsController : BaseApiController
     {
         private readonly ILogger<ProductsController> _logger;
         private readonly IGenericRepository<Product> _productsRepository;
@@ -43,6 +41,8 @@ namespace API.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse), StatusCodes.Status404NotFound)]
         public async Task<ActionResult<ProductToReturnDto>> GetProductById(int id)
         {
             _logger.LogInformation("Retrieving product with ID: {ProductId}", id);
@@ -51,7 +51,7 @@ namespace API.Controllers
             var product = await _productsRepository.GetEntityWithSpec(spec);
             if (product == null)
             {
-                return NotFound();
+                return NotFound(new ApiResponse(404));
             }
 
             var productToReturn = _mapper.Map<Product, ProductToReturnDto>(product);
