@@ -5,7 +5,8 @@ using Core.Entities;
 using Core.Specifications;
 using API.Dtos;
 using AutoMapper;
-using API.Errors; // Add the namespace for Task
+using API.Errors;
+using API.Helpers; // Add the namespace for Task
 
 
 
@@ -30,14 +31,20 @@ namespace API.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IReadOnlyList<ProductToReturnDto>>> GetProducts()
+        public async Task<ActionResult<Pagination<ProductToReturnDto>>> GetProducts([FromQuery]ProductSpecParams productParams) // Modify the return type of the method
         {
             _logger.LogInformation("Retrieving products");
 
-            var spec = new ProductsWithTypesAndBrandsSpecification();
+            var spec = new ProductsWithTypesAndBrandsSpecification(productParams); // Modify the specification
+            
+            _logger.LogInformation("Retrieving products");
+
+            var countSpec = new ProductWithFiltersForCountSpecification(productParams); // Add a new specification
+
+            var totalItems = await _productsRepository.CountAsync(countSpec); // Use the CountAsync method
             var products = await _productsRepository.ListAsync(spec); // Use the ListAsync method 
             var productsToReturn = _mapper.Map<IReadOnlyList<Product>, IReadOnlyList<ProductToReturnDto>>(products); // Use the Map method
-            return Ok(productsToReturn);
+            return Ok(new Pagination<ProductToReturnDto>(productParams.PageIndex, productParams.PageSize, totalItems, productsToReturn));
         }
 
         [HttpGet("{id}")]

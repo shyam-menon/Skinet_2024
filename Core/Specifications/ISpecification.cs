@@ -7,5 +7,15 @@ namespace Core.Specifications
         //an expression that takes a function which takes a type that it is returning
         Expression<Func<T, bool>> Criteria { get; }
         List<Expression<Func<T, object>>> Includes { get; }
+
+        Expression<Func<T, object>> OrderBy { get; }
+
+        Expression<Func<T, object>> OrderByDescending { get; }
+
+        int Take { get; }
+
+        int Skip { get; }
+
+        bool IsPagingEnabled { get; }
     }
 }

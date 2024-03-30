@@ -12,6 +12,12 @@ namespace API.Extensions
 {
     public static class ApplicationServicesExtensions
     {
+        /// <summary>
+        /// Adds application services to the specified <see cref="IServiceCollection"/>.
+        /// </summary>
+        /// <param name="services">The <see cref="IServiceCollection"/> to add the services to.</param>
+        /// <param name="config">The <see cref="IConfiguration"/> containing the configuration settings.</param>
+        /// <returns>The modified <see cref="IServiceCollection"/>.</returns>
         public static IServiceCollection AddApplicationServices(this IServiceCollection services, IConfiguration config)
         {           
 
@@ -46,6 +52,15 @@ namespace API.Extensions
                     return new BadRequestObjectResult(errorResponse);
                 };
             });
+
+            services.AddCors(opt =>
+            {
+                opt.AddPolicy("CorsPolicy", policy =>
+                {
+                    policy.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200");
+                });
+            });
+
             return services;
         }
         
